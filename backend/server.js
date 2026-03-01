@@ -10,13 +10,26 @@ const exportRouter = require('./routes/export');
 const searchRouter = require('./routes/search');
 const settingsRouter = require('./routes/settings');
 const statsRouter = require('./routes/stats');
+const coversRouter = require('./routes/covers');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// --- Covers Dir Init ---
+const dataDir = process.env.DB_FILE ? path.dirname(process.env.DB_FILE) : path.join(__dirname, '../data');
+const coversDir = path.join(dataDir, 'covers');
+if (!fs.existsSync(coversDir)) {
+  fs.mkdirSync(coversDir, { recursive: true });
+}
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.text({ type: ['text/*','application/csv'], limit: '5mb' }));
 app.use(cors({ origin: true, credentials: true }));
+
+// Statisches Ausliefern der Cover-Bilder
+app.use('/api/covers', express.static(coversDir));
 
 // --- DB init + migration ---
 async function init() {
@@ -95,5 +108,6 @@ app.use('/', exportRouter);
 app.use('/', searchRouter);
 app.use('/', settingsRouter);
 app.use('/', statsRouter);
+app.use('/', coversRouter);
 
 app.listen(PORT, () => console.log(`Backend läuft auf http://localhost:${PORT}`));

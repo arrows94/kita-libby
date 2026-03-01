@@ -1,5 +1,1 @@
-Backend listening on http://localhost:3001
-[Error: SQLITE_CONSTRAINT: UNIQUE constraint failed: rec_settings.key] {
-  errno: 19,
-  code: 'SQLITE_CONSTRAINT'
-}
+Backend läuft auf http://localhost:3001

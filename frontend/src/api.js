@@ -117,6 +117,20 @@ export const api = {
     });
     if(!r.ok){ const t = await r.text(); throw new Error(t||'settings save failed'); }
     return r.json();
+  },
+  async uploadCover(file, token){
+    const formData = new FormData();
+    formData.append('cover', file);
+    const r = await fetch(`${base}/covers/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+    if(!r.ok) {
+      const t = await r.text();
+      throw new Error(t || 'upload failed');
+    }
+    return r.json();
   }
 }
 
