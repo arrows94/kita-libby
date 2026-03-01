@@ -156,6 +156,46 @@ export default function App(){
   }
 
   const [books, setBooks] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 50;
+
+  async function loadMore() {
+    if (!hasMore) return;
+    try {
+      const offset = page * LIMIT;
+      const newBooks = await api.getBooks(LIMIT, offset);
+      if (newBooks.length < LIMIT) {
+        setHasMore(false);
+      }
+      setBooks(prev => {
+        // avoid duplicates
+        const existingIds = new Set(prev.map(b => b.id));
+        const filtered = newBooks.filter(b => !existingIds.has(b.id));
+        return [...prev, ...filtered];
+      });
+      setPage(p => p + 1);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function refreshBooks() {
+    try {
+      // Reload up to the current number of loaded books, or at least LIMIT
+      const currentLimit = Math.max(page * LIMIT, LIMIT);
+      const newBooks = await api.getBooks(currentLimit, 0);
+      setBooks(newBooks);
+      if (newBooks.length < currentLimit) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const [token, setToken] = useState(localStorage.getItem('token') || '');
 
   // Calculate kiosk mode based on route or query param
@@ -228,7 +268,7 @@ export default function App(){
 
   // Initial data
   useEffect(() => {
-    api.getBooks().then(setBooks).catch(console.error);
+    loadMore();
     api.getTop().then(setTop).catch(()=>setTop([]));
     api.getSeasonal?.().then(setSeasonal).catch(()=>setSeasonal({season:'',items:[]}));
     api.getCatMeta?.().then(setCatMeta).catch(()=>setCatMeta([]));
@@ -287,7 +327,7 @@ export default function App(){
     try {
       if(id){ await api.updateBook(id, payload, token); }
       else { await api.createBook(payload, token); }
-      setBooks(await api.getBooks());
+      await refreshBooks();
       resetForm();
       navigate('/');
     } catch(e){
@@ -298,7 +338,7 @@ export default function App(){
     if(!confirm('Buch wirklich löschen?')) return;
     try{
       await api.deleteBook(id, token);
-      setBooks(await api.getBooks());
+      await refreshBooks();
       setTop(await api.getTop());
     }catch(e){ alert(e.message || 'Fehler beim Löschen'); }
   }
@@ -344,7 +384,7 @@ export default function App(){
     const ids = Array.from(selectedIds);
     try{
       await api.bulkUpdateColors(ids, payload, token);
-      setBooks(await api.getBooks());
+      await refreshBooks();
       clearSelection();
       alert('Farb-Tags aktualisiert.');
     }catch(e){
@@ -369,7 +409,7 @@ export default function App(){
       await api.applyMetadata(lookupFor.id, {
         authors: p.authors || [], description: p.description || '', isbn: p.isbn || '', cover: p.cover || ''
       }, token);
-      setBooks(await api.getBooks());
+      await refreshBooks();
       setTop && setTop(await api.getTop ? await api.getTop() : []);
       setLookupOpen(false);
     } catch{ alert('Übernehmen fehlgeschlagen'); }
@@ -467,6 +507,8 @@ export default function App(){
             token={token}
             startEdit={startEdit}
             delBook={delBook}
+            hasMore={hasMore}
+            loadMore={loadMore}
           />
 
           {/* Detail-Modal */}
@@ -533,6 +575,8 @@ export default function App(){
               token={token}
               startEdit={startEdit}
               delBook={delBook}
+              hasMore={hasMore}
+              loadMore={loadMore}
             />
 
             {/* Detail-Modal */}
@@ -593,7 +637,7 @@ export default function App(){
           books={books}
           token={token}
           refresh={async ()=>{
-            try { setBooks(await api.getBooks()); } catch {}
+            try { await refreshBooks(); } catch {}
             if(api.getTop){ try{ setTop(await api.getTop()); } catch(e){} }
             try { setCatMeta(await api.getCatMeta?.() || []); } catch {}
           }}
@@ -605,7 +649,7 @@ export default function App(){
         setCatMeta={setCatMeta}
         token={token}
         refreshBooks={async ()=>{
-          try { setBooks(await api.getBooks()); } catch {}
+          try { await refreshBooks(); } catch {}
         }}
       />
     </div>
@@ -719,7 +763,7 @@ export default function App(){
                           try{
                             const res = await api.importCSV(text, token);
                             alert(`Importiert: ${res.imported}`);
-                            setBooks(await api.getBooks());
+                            await refreshBooks();
                             setTop(await api.getTop());
                           }catch(err){ alert('Import fehlgeschlagen: ' + (err.message||'')); }
                         }} />
@@ -743,7 +787,7 @@ export default function App(){
                         try{
                           const res = await api.enrichMissing(false, token);
                           alert(`Übernommen: ${res.count}`);
-                          setBooks(await api.getBooks());
+                          await refreshBooks();
                           setTop(await api.getTop());
                         }catch(e){ alert('Enrichment fehlgeschlagen'); }
                       }}>Automatisch übernehmen</button>

@@ -13,8 +13,13 @@ export const api = {
     }
     return r.json();
   },
-  async getBooks(){
-    const r = await fetch(`${base}/books`);
+  async getBooks(limit = null, offset = null){
+    const params = new URLSearchParams();
+    if (limit !== null) params.append('limit', limit);
+    if (offset !== null) params.append('offset', offset);
+
+    const url = `${base}/books${params.toString() ? `?${params.toString()}` : ''}`;
+    const r = await fetch(url);
     if(!r.ok) throw new Error('fetch failed');
     return r.json();
   },

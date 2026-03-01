@@ -41,7 +41,18 @@ async function downloadCover(url) {
 }
 
 router.get('/books', async (req, res) => {
-  const rows = await db.all('SELECT * FROM books ORDER BY created_at DESC');
+  const limit = parseInt(req.query.limit, 10);
+  const offset = parseInt(req.query.offset, 10) || 0;
+
+  let query = 'SELECT * FROM books ORDER BY created_at DESC';
+  const params = [];
+
+  if (!isNaN(limit) && limit > 0) {
+    query += ' LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+  }
+
+  const rows = await db.all(query, params);
   const parsed = rows.map(r => ({
       ...r,
       authors: r.authors ? JSON.parse(r.authors) : [],

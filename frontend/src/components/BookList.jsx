@@ -11,7 +11,9 @@ export function BookList({
   toggleSelect,
   token,
   startEdit,
-  delBook
+  delBook,
+  hasMore,
+  loadMore
 }) {
   return (
     <div className="container">
@@ -166,6 +168,14 @@ export function BookList({
       {filtered.length === 0 && (
         <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: 32 }}>
           Keine Treffer.
+        </div>
+      )}
+
+      {hasMore && (
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <button className="btn primary" onClick={loadMore}>
+            Mehr laden
+          </button>
         </div>
       )}
     </div>
