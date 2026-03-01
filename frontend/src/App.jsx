@@ -3,21 +3,11 @@ import { api } from './api.js';
 import Login from './login.jsx';
 import ManageBulk from './ManageBulk.jsx';
 import { ChipsInput } from './chips.jsx';
-
-const COLOR_PRESETS = [
-  { key: 'white', name: 'Weiß', hex: '#ffffff', border:'#d1d5db' },
-  { key: 'red', name: 'Rot', hex: '#ef4444' },
-  { key: 'orange', name: 'Orange', hex: '#f97316' },
-  { key: 'yellow', name: 'Gelb', hex: '#eab308' },
-  { key: 'green', name: 'Grün', hex: '#22c55e' },
-  { key: 'teal', name: 'Türkis', hex: '#14b8a6' },
-  { key: 'blue', name: 'Blau', hex: '#3b82f6' },
-  { key: 'purple', name: 'Lila', hex: '#8b5cf6' },
-  { key: 'pink', name: 'Pink', hex: '#ec4899' },
-  { key: 'brown', name: 'Braun', hex: '#92400e' },
-  { key: 'gray', name: 'Grau', hex: '#6b7280' },
-  { key: 'black', name: 'Schwarz', hex: '#000000' },
-];
+import { COLOR_PRESETS } from './constants.js';
+import { FilterPanel } from './components/FilterPanel.jsx';
+import { BookDetailModal } from './components/BookDetailModal.jsx';
+import { AdminForm } from './components/AdminForm.jsx';
+import { BookList } from './components/BookList.jsx';
 function CategoryManagerPanel({ catMeta, setCatMeta, refreshBooks, token }) {
   const [newCat, setNewCat] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -431,195 +421,37 @@ export default function App(){
               </div>
 
               {showFilters && (
-                <div className="filter-panel">
-                  <div className="filter-grid">
-                    {/* Kategorien */}
-                    <section>
-                      <div className="filter-head">
-                        <strong>Kategorien</strong>
-                        <div className="filter-actions">
-                          {catFilter.length > 0 && (
-                            <button className="btn" onClick={()=>setCatFilter([])}>Zurücksetzen</button>
-                          )}
-                        </div>
-                      </div>
-
-                      {catFilter.length > 0 && (
-                        <div className="filter-active">
-                          {catFilter.map((c)=>(
-                            <span key={c} className="chip">
-                              {c}
-                              <button onClick={()=>setCatFilter(catFilter.filter(x=>x!==c))}>×</button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="filter-cats" role="listbox" aria-label="Kategorien wählen">
-                        {allCategories.map((c)=>(
-                          !catFilter.includes(c) && (
-                            <span
-                              key={c}
-                              className="badge"
-                              role="option"
-                              onClick={()=>setCatFilter([...catFilter, c])}
-                            >
-                              {c}
-                            </span>
-                          )
-                        ))}
-                        {allCategories.length===0 && (
-                          <div style={{color:'var(--muted)', fontSize:13}}>Noch keine Kategorien im Bestand.</div>
-                        )}
-                      </div>
-                    </section>
-
-                    {/* Farben */}
-                    <section>
-                      <div className="filter-head">
-                        <strong>Farben</strong>
-                        <div className="filter-actions">
-                          {filterColors.length>0 && (
-                            <button className="btn" onClick={()=>setFilterColors([])}>Zurücksetzen</button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="filter-colors" role="group" aria-label="Farben filtern">
-                        {COLOR_PRESETS.map((c)=>{
-                          const active = filterColors.includes(c.key);
-                          return (
-                            <button
-                              key={c.key}
-                              className="badge"
-                              onClick={() =>
-                                setFilterColors(p => active ? p.filter(x=>x!==c.key) : [...p, c.key])
-                              }
-                              title={c.name}
-                              style={{
-                                background: active ? c.hex || '#fff' : '#fff',
-                                color: active ? (c.key === 'white' ? '#111' : '#fff') : 'inherit',
-                                borderColor: c.border || 'transparent',
-                              }}
-                            >
-                              <span
-                                className="tag-dot"
-                                style={{
-                                  background: c.hex || '#fff',
-                                  border: c.key === 'white' ? '1px solid #d1d5db' : 'none',
-                                }}
-                              />
-                              {c.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  </div>
-                </div>
+                <FilterPanel
+                  catFilter={catFilter}
+                  setCatFilter={setCatFilter}
+                  allCategories={allCategories}
+                  filterColors={filterColors}
+                  setFilterColors={setFilterColors}
+                />
               )}
             </div>
           )}
 
           {/* Trefferliste */}
-          <div className="container">
-            <div className="book-grid" style={{ marginTop: 12, gridTemplateColumns: kiosk ? 'repeat(auto-fill,minmax(220px,1fr))' : undefined }}>
-              {filtered.map((b) => (
-                <article key={b.id} className="card" onClick={() => { countView(b.id); openBook(b); }}>
-                  <div className="row">
-                    {selectMode && (
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(b.id)}
-                        onChange={(e)=>{ e.stopPropagation(); toggleSelect(b.id); }}
-                        style={{marginRight:6}}
-                        aria-label={`Buch auswählen: ${b.title}`}
-                      />
-                    )}
-                    {b.cover ? (
-                      <img loading="lazy" src={b.cover} sizes="(max-width: 768px) 40vw, 120px" alt="Cover" style={{ width: 80, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-                    ) : (
-                      <div style={{ width: 80, height: 110, background: '#f1f5f9', border: '1px solid #e5e7eb', borderRadius: 8, display: 'grid', placeItems: 'center', color: '#9ca3af', fontSize: 12 }}>Kein Cover</div>
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="truncate" style={{ fontWeight: 600 }} title={b.title}>{b.title}</div>
-                      <div className="truncate" style={{ fontSize: 13, color: 'var(--muted)' }} title={(b.authors || []).join(', ')}>{(b.authors || []).join(', ')}</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>{(b.categories || []).join(' · ')}</div>
-                      <div className="row" style={{ marginTop: 6, flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
-                        {[b.color1, b.color2, b.color3].filter(Boolean).map((ck, i) => {
-                          const c = COLOR_PRESETS.find((x) => x.key === ck);
-                          return (
-                            <span key={i} className="badge" style={{ background: c?.hex || '#fff', color: ck === 'white' ? '#111' : '#fff', borderColor: c?.border || 'transparent' }}>
-                              <span className="tag-dot" style={{ background: c?.hex || '#fff', border: ck === 'white' ? '1px solid #d1d5db' : 'none' }} />
-                              {c?.name || ck}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                  <p style={{ marginTop: 8, fontSize: 14, color: '#334155' }}>
-                    {(b.description || '').slice(0, 180)}{(b.description || '').length > 180 ? '…' : ''}
-                  </p>
-                  <div className="row wrap" style={{ marginTop: 8, justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                    <span>ISBN: {b.isbn || '–'}</span>
-                    {!kiosk && token && (
-                      <div className="row wrap">
-                        <button className="btn" onClick={(e) => { e.stopPropagation(); startEdit(b); }}>Bearbeiten</button>
-                        {localStorage.getItem('role') === 'admin' && (
-                          <button className="btn" onClick={(e) => { e.stopPropagation(); delBook(b.id); }} style={{ color: '#b91c1c', borderColor: '#fecaca' }}>Löschen</button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            {filtered.length === 0 && <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: 32 }}>Keine Treffer.</div>}
-          </div>
+          <BookList
+            filtered={filtered}
+            kiosk={kiosk}
+            countView={countView}
+            openBook={openBook}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            toggleSelect={toggleSelect}
+            token={token}
+            startEdit={startEdit}
+            delBook={delBook}
+          />
 
           {/* Detail-Modal */}
-          {selectedBook && (
-            <div className="modal" role="dialog" aria-modal="true" aria-labelledby="book-title" onClick={closeBook}>
-              <div className="modal-content" onClick={(e)=>e.stopPropagation()}>
-                <div className="row" style={{justifyContent:'space-between'}}>
-                  <h3 id="book-title" style={{margin:0}}>{selectedBook.title}</h3>
-                  <div className="row" style={{gap:8}}>
-                    <button className="btn" onClick={()=>openLookup(selectedBook)}>Metadaten finden</button>
-                    <button className="btn" onClick={closeBook} aria-label="Schließen">Schließen</button>
-                  </div>
-                </div>
-                <div className="row" style={{alignItems:'flex-start', gap:16, marginTop:12}}>
-                  {selectedBook.cover ? (
-                    <img src={selectedBook.cover} alt="Cover" style={{width:160,height:220,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}} />
-                  ) : (
-                    <div style={{width:160,height:220,background:'#f1f5f9',border:'1px solid #e5e7eb',borderRadius:8,display:'grid',placeItems:'center',color:'#9ca3af'}}>Kein Cover</div>
-                  )}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,color:'var(--muted)'}}>{(selectedBook.authors||[]).join(', ')||'—'}</div>
-                    <div style={{fontSize:13,color:'var(--muted)',margin:'4px 0'}}>ISBN: {selectedBook.isbn||'—'}</div>
-                    <div style={{display:'flex',gap:6,flexWrap:'wrap',margin:'6px 0'}}>
-                      {(selectedBook.categories||[]).map((c,i)=>(<span key={i} className="chip">{c}</span>))}
-                    </div>
-                    <div style={{display:'flex', gap:6, flexWrap:'wrap', justifyContent:'center'}}>
-                      {[selectedBook.color1, selectedBook.color2, selectedBook.color3].filter(Boolean).map((ck,i)=>{
-                        const c = COLOR_PRESETS.find(x=>x.key===ck);
-                        return (
-                          <span key={i} className="badge" style={{ background: c?.hex || '#fff', color: ck === 'white' ? '#111' : '#fff', borderColor: c?.border || 'transparent' }}>
-                            <span className="tag-dot" style={{ background: c?.hex || '#fff', border: ck === 'white' ? '1px solid #d1d5db' : 'none' }} />
-                            {c?.name || ck}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <div style={{marginTop:12,whiteSpace:'pre-wrap',lineHeight:1.5}}>
-                  {selectedBook.description || 'Keine Beschreibung vorhanden.'}
-                </div>
-              </div>
-            </div>
-          )}
+          <BookDetailModal
+            selectedBook={selectedBook}
+            closeBook={closeBook}
+            openLookup={openLookup}
+          />
 
           {/* Lookup-Modal */}
           {lookupOpen && (
@@ -698,70 +530,21 @@ export default function App(){
           ) : (
             <div className="grid" style={{gridTemplateColumns:'2fr 1fr'}}>
               {/* Formular (links) */}
-              <section className="card">
-                <h2>{id?'Buch bearbeiten':'Buch anlegen'}</h2>
-                <form className="grid" style={{gridTemplateColumns:'1fr 1fr'}} onSubmit={saveBook}>
-                  <div className="row" style={{gridColumn:'1 / -1', alignItems:'end'}}>
-                    <div style={{flex:1}}>
-                      <label>ISBN</label>
-                      <input className="input" inputMode="numeric" pattern="[0-9Xx\\- ]*" value={isbn} onChange={e=>setIsbn(e.target.value)} placeholder="z. B. 978-3-16-148410-0" />
-                    </div>
-                    <button type="button" className="btn primary" onClick={lookupISBN} disabled={loadingIsbn}>{loadingIsbn?'Suche…':'ISBN nachschlagen'}</button>
-                  </div>
-
-                  <div style={{gridColumn:'1 / -1'}}>
-                    <label>Titel*</label>
-                    <input className="input" value={title} onChange={e=>setTitle(e.target.value)} required />
-                  </div>
-
-                  <div style={{gridColumn:'1 / -1'}}>
-                    <label>Autor*innen (durch Komma getrennt)</label>
-                    <input className="input" value={authors} onChange={e=>setAuthors(e.target.value)} />
-                  </div>
-
-                  <div style={{gridColumn:'1 / -1'}}>
-                    <label>Kategorien</label>
-                    <ChipsInput values={categories} onChange={setCategories} suggestions={allCategories} />
-                  </div>
-
-                  <div>
-                    <label>Cover-URL</label>
-                    <input className="input" value={cover} onChange={e=>setCover(e.target.value)} placeholder="https://…" />
-                  </div>
-
-                  <div style={{gridColumn:'1 / -1'}}>
-                    <label>Beschreibung</label>
-                    <textarea className="input" rows="5" value={description} onChange={e=>setDescription(e.target.value)} />
-                  </div>
-
-                  <div>
-                    <label>Farb-Tag 1</label>
-                    <select value={color1} onChange={e=>setColor1(e.target.value)}>
-                      <option value="">—</option>
-                      {COLOR_PRESETS.map(c=><option key={c.key} value={c.key}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Farb-Tag 2 (darf gleich wie 1 sein)</label>
-                    <select value={color2} onChange={e=>setColor2(e.target.value)}>
-                      <option value="">—</option>
-                      {COLOR_PRESETS.map(c=><option key={c.key} value={c.key}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label>Farb-Tag 3</label>
-                    <select value={color3} onChange={e=>setColor3(e.target.value)}>
-                      <option value="">—</option>
-                      {COLOR_PRESETS.map(c=><option key={c.key} value={c.key}>{c.name}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="row sticky-actions" style={{gridColumn:'1 / -1'}}>
-                    <button className="btn primary" type="submit">{id?'Änderungen speichern':'Buch hinzufügen'}</button>
-                    {id && <button className="btn" type="button" onClick={resetForm}>Abbrechen</button>}
-                  </div>
-                </form>
-              </section>
+              <AdminForm
+                saveBook={saveBook}
+                id={id}
+                isbn={isbn} setIsbn={setIsbn}
+                lookupISBN={lookupISBN} loadingIsbn={loadingIsbn}
+                title={title} setTitle={setTitle}
+                authors={authors} setAuthors={setAuthors}
+                categories={categories} setCategories={setCategories} allCategories={allCategories}
+                cover={cover} setCover={setCover}
+                description={description} setDescription={setDescription}
+                color1={color1} setColor1={setColor1}
+                color2={color2} setColor2={setColor2}
+                color3={color3} setColor3={setColor3}
+                resetForm={resetForm}
+              />
 
               {/* Rechte Spalte + Toolbar */}
               <aside className="grid" style={{gridTemplateRows:'auto auto auto', gap:12}}>
