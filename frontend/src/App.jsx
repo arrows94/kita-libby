@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Routes, Route, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { api } from './api.js';
 import Login from './login.jsx';
 import ManageBulk from './ManageBulk.jsx';
@@ -125,8 +126,12 @@ function CategoryManagerPanel({ catMeta, setCatMeta, refreshBooks, token }) {
 
 
 export default function App(){
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Tabs & global
-  const [tab, setTab] = useState('search');
+  // Removed tab state, using location.pathname instead
     // --- Dark-Mode State + Persistenz ---
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -152,7 +157,25 @@ export default function App(){
 
   const [books, setBooks] = useState([]);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [kiosk, setKiosk] = useState(new URLSearchParams(location.search).has('kiosk'));
+
+  // Calculate kiosk mode based on route or query param
+  const kiosk = location.pathname === '/kiosk' || searchParams.has('kiosk');
+
+  function toggleKiosk() {
+    if (kiosk) {
+      if (location.pathname === '/kiosk') {
+        navigate('/');
+      } else {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('kiosk');
+        setSearchParams(nextParams);
+      }
+    } else {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('kiosk', '1');
+      setSearchParams(nextParams);
+    }
+  }
 
   // Empfehlungen & Kategorien-Manager
   const [seasonal, setSeasonal] = useState({ season: '', items: [] });
@@ -243,7 +266,7 @@ export default function App(){
   }
   function startEdit(b){
     setId(b.id); setIsbn(b.isbn||''); setTitle(b.title||''); setAuthors((b.authors||[]).join(', '));
-    setCategories(b.categories||[]); setDescription(b.description||''); setCover(b.cover||''); setColor1(b.color1||''); setColor2(b.color2||''); setColor3(b.color3||''); setTab('admin');
+    setCategories(b.categories||[]); setDescription(b.description||''); setCover(b.cover||''); setColor1(b.color1||''); setColor2(b.color2||''); setColor3(b.color3||''); navigate('/admin');
     setShowInventory(true);
   }
   async function saveBook(e){
@@ -266,7 +289,7 @@ export default function App(){
       else { await api.createBook(payload, token); }
       setBooks(await api.getBooks());
       resetForm();
-      setTab('search');
+      navigate('/');
     } catch(e){
       alert(e.message || 'Fehler beim Speichern');
     }
@@ -358,10 +381,10 @@ export default function App(){
         <div className="container row" style={{justifyContent:'space-between'}}>
           <h1>Kita-Bibliothek</h1>
           <div className="row wrap">
-            <button className={"btn " + (tab==='search'?'primary':'')} onClick={()=>setTab('search')}>Suche</button>
-            <button className={"btn " + (tab==='manage'?'primary':'')} onClick={()=>setTab('manage')}>Verwalten</button>
-            <button className={"btn " + (tab==='admin'?'primary':'')} onClick={()=>setTab('admin')}>Administration</button>
-            <button className="btn" onClick={()=>setKiosk(k=>!k)}>{kiosk ? "Kiosk aus" : "Kiosk an"}</button>
+            <button className={"btn " + (location.pathname==='/' || location.pathname==='/kiosk'?'primary':'')} onClick={()=>navigate('/')}>Suche</button>
+            <button className={"btn " + (location.pathname==='/manage'?'primary':'')} onClick={()=>navigate('/manage')}>Verwalten</button>
+            <button className={"btn " + (location.pathname==='/admin'?'primary':'')} onClick={()=>navigate('/admin')}>Administration</button>
+            <button className="btn" onClick={toggleKiosk}>{kiosk ? "Kiosk aus" : "Kiosk an"}</button>
             <button className="btn" onClick={()=>setShowCatMgr(s=>!s)}>{showCatMgr ? "Kategorien schließen" : "Kategorien-Manager"}</button>
 			<button className="btn" onClick={toggleTheme}>  {theme === 'dark' ? 'Hell' : 'Dunkel'}</button>
             <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ alert("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "Empfehlungen schließen" : "Einstellungen Empfehlungen"}</button>
@@ -370,10 +393,10 @@ export default function App(){
         </div>
       </header>
 
-      {/* --- TAB: SEARCH --- */}
-      {tab==='search' && (
-        <>
-          {/* Saisonale Empfehlungen */}
+      <Routes>
+        <Route path="/" element={
+          <>
+            {/* Saisonale Empfehlungen */}
           {(!kiosk && seasonal.items && seasonal.items.length > 0) && (
             <div className="container card" style={{ marginTop: 12 }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -488,11 +511,77 @@ export default function App(){
               </div>
             </div>
           )}
-        </>
-      )}
+          </>
+        } />
 
-      {/* --- TAB: MANAGE --- */}
-      {tab==='manage' && (
+        <Route path="/kiosk" element={
+          <>
+            {/* Suchleiste & Filter */}
+            <div className='grid' style={{gridTemplateColumns:'1fr'}}>
+              <input className='input' value={query} onChange={e=>setQuery(e.target.value)} placeholder='Suche…' />
+            </div>
+
+            {/* Trefferliste */}
+            <BookList
+              filtered={filtered}
+              kiosk={true}
+              countView={countView}
+              openBook={openBook}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              toggleSelect={toggleSelect}
+              token={token}
+              startEdit={startEdit}
+              delBook={delBook}
+            />
+
+            {/* Detail-Modal */}
+            <BookDetailModal
+              selectedBook={selectedBook}
+              closeBook={closeBook}
+              openLookup={openLookup}
+            />
+
+            {/* Lookup-Modal */}
+            {lookupOpen && (
+              <div className="modal" role="dialog" aria-modal="true" aria-labelledby="lookup-title" onClick={()=>setLookupOpen(false)}>
+                <div className="modal-content" onClick={(e)=>e.stopPropagation()}>
+                  <div className="row" style={{justifyContent:'space-between'}}>
+                    <h3 id="lookup-title" style={{margin:0}}>Metadaten zu „{lookupFor?.title}“</h3>
+                    <button className="btn" onClick={()=>setLookupOpen(false)}>Schließen</button>
+                  </div>
+                  {lookupBusy ? (
+                    <div style={{padding:12}}>Lade Ergebnisse…</div>
+                  ) : (
+                    <div className="book-grid" style={{marginTop:12}}>
+                      {lookupResults.map((r, i) => (
+                        <article key={i} className="card">
+                          <div className="row">
+                            {r.cover ? <img src={r.cover} alt="Cover" style={{width:80,height:110,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}}/> : <div style={{width:80,height:110,background:'#f1f5f9',border:'1px solid #e5e7eb',borderRadius:8}}/>}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div className="truncate" style={{fontWeight:600}}>{r.title}</div>
+                              <div className="truncate" style={{fontSize:12,color:'var(--muted)'}}>{(r.authors||[]).join(', ')||'—'}</div>
+                              {r.isbn && <div style={{fontSize:12,color:'var(--muted)'}}>ISBN: {r.isbn}</div>}
+                              <div style={{fontSize:12, color:'var(--muted)', maxHeight:72, overflow:'auto'}}>{r.description || '—'}</div>
+                              <div className="row" style={{marginTop:8, justifyContent:'space-between'}}>
+                                <span className="pill">{r.source}</span>
+                                <button className="btn" onClick={()=>applyPick(r)}>Übernehmen</button>
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                      {lookupResults.length===0 && <div style={{padding:8, color:'var(--muted)'}}>Keine Treffer.</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        } />
+
+        {/* --- TAB: MANAGE --- */}
+        <Route path="/manage" element={
 <main className="container">
   {!token ? (
     <div className="card">Bitte zuerst einloggen.</div>
@@ -522,8 +611,10 @@ export default function App(){
     </div>
   )}
 </main>
-)}
-      {tab==='admin' && (
+        } />
+
+        {/* --- TAB: ADMIN --- */}
+        <Route path="/admin" element={
         <main className="container">
           {!token ? (
             <div className="card">Bitte zuerst einloggen, um Bücher zu bearbeiten.</div>
@@ -707,7 +798,8 @@ export default function App(){
             </div>
           )}
         </main>
-      )}
+        } />
+      </Routes>
 
       <footer className="container" style={{textAlign:'center',fontSize:12,color:'var(--muted)',padding:'24px 0'}}>
         © {new Date().getFullYear()} Kita-Bibliothek
