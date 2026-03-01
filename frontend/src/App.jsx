@@ -424,16 +424,14 @@ export default function App(){
   return (
     <div>
       <header>
-        <div className="container row" style={{justifyContent:'space-between'}}>
-          <h1>Kita-Bibliothek</h1>
+        <div className="container row" style={{justifyContent:'space-between', alignItems:'center'}}>
+          <h1 style={{margin: '8px 0'}}>Kita-Bibliothek</h1>
           <div className="row wrap">
             <button className={"btn " + (location.pathname==='/' || location.pathname==='/kiosk'?'primary':'')} onClick={()=>navigate('/')}>Suche</button>
-            <button className={"btn " + (location.pathname==='/manage'?'primary':'')} onClick={()=>navigate('/manage')}>Verwalten</button>
-            <button className={"btn " + (location.pathname==='/admin'?'primary':'')} onClick={()=>navigate('/admin')}>Administration</button>
+            {token && <button className={"btn " + (location.pathname==='/manage'?'primary':'')} onClick={()=>navigate('/manage')}>Verwalten</button>}
+            {token && <button className={"btn " + (location.pathname==='/admin'?'primary':'')} onClick={()=>navigate('/admin')}>Administration</button>}
             <button className="btn" onClick={toggleKiosk}>{kiosk ? "Kiosk aus" : "Kiosk an"}</button>
-            <button className="btn" onClick={()=>setShowCatMgr(s=>!s)}>{showCatMgr ? "Kategorien schließen" : "Kategorien-Manager"}</button>
-			<button className="btn" onClick={toggleTheme}>  {theme === 'dark' ? 'Hell' : 'Dunkel'}</button>
-            <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ toast.error("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "Empfehlungen schließen" : "Einstellungen Empfehlungen"}</button>
+			<button className="btn" onClick={toggleTheme}>{theme === 'dark' ? 'Hell' : 'Dunkel'}</button>
             <Login token={token} onToken={(t)=>{ setToken(t); localStorage.setItem('token', t||''); }} defaultRole="admin" />
           </div>
         </div>
@@ -637,18 +635,100 @@ export default function App(){
     <div className="card">Bitte zuerst einloggen.</div>
   ) : (
     <div className="grid" style={{gridTemplateColumns:'2fr 1fr', gap:12}}>
-      <section className="card" style={{minWidth:0}}>
-        <h2 style={{marginTop:0}}>Sammelaktionen</h2>
-        <ManageBulk
-          books={books}
-          token={token}
-          refresh={async ()=>{
-            try { await refreshBooks(); } catch {}
-            if(api.getTop){ try{ setTop(await api.getTop()); } catch(e){} }
-            try { setCatMeta(await api.getCatMeta?.() || []); } catch {}
-          }}
-        />
-      </section>
+      <div className="grid" style={{gap:12}}>
+        <section className="card" style={{minWidth:0}}>
+          <h2 style={{marginTop:0}}>Sammelaktionen</h2>
+          <ManageBulk
+            books={books}
+            token={token}
+            refresh={async ()=>{
+              try { await refreshBooks(); } catch {}
+              if(api.getTop){ try{ setTop(await api.getTop()); } catch(e){} }
+              try { setCatMeta(await api.getCatMeta?.() || []); } catch {}
+            }}
+          />
+        </section>
+
+        <section className="card" style={{minWidth:0}}>
+          <div className="row" style={{justifyContent: 'space-between'}}>
+            <h2 style={{marginTop:0}}>Empfehlungen – Einstellungen</h2>
+            <button className="btn" onClick={async()=>{
+              if(!showRecsSettings) {
+                if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ toast.error("Konnte Einstellungen nicht laden"); } }
+              }
+              setShowRecsSettings(s=>!s);
+            }}>
+              {showRecsSettings ? "Einstellungen schließen" : "Einstellungen öffnen"}
+            </button>
+          </div>
+          {showRecsSettings && (
+            <div style={{marginTop: 12}}>
+              {!recSettings ? (
+                <div style={{color:'var(--muted)'}}>Lade Einstellungen…</div>
+              ) : (
+                <form className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}} onSubmit={async (e)=>{
+                  e.preventDefault();
+                  try{
+                    const payload = {
+                      enabled: e.target.enabled.checked,
+                      weightKeyword: parseInt(e.target.weightKeyword.value,10)||0,
+                      weightView: parseInt(e.target.weightView.value,10)||0,
+                      maxItems: parseInt(e.target.maxItems.value,10)||12,
+                      keywords: {
+                        winter: e.target.kw_winter.value.split(',').map(s=>s.trim()).filter(Boolean),
+                        fruehling: e.target.kw_fruehling.value.split(',').map(s=>s.trim()).filter(Boolean),
+                        sommer: e.target.kw_sommer.value.split(',').map(s=>s.trim()).filter(Boolean),
+                        herbst: e.target.kw_herbst.value.split(',').map(s=>s.trim()).filter(Boolean),
+                      }
+                    };
+                    const saved = await api.saveRecSettings?.(payload, token);
+                    setRecSettings(saved);
+                    toast.success('Einstellungen gespeichert.');
+                  }catch(err){ toast.error(err.message || 'Speichern fehlgeschlagen'); }
+                }}>
+                  <div className="row" style={{gridColumn:'1 / -1', alignItems:'center', gap:12}}>
+                    <label className="row"><input type="checkbox" name="enabled" defaultChecked={!!recSettings.enabled} /> Empfehlungen aktivieren</label>
+                  </div>
+                  <div>
+                    <label>Punkte pro Keyword</label>
+                    <input className="input" type="number" name="weightKeyword" defaultValue={recSettings.weightKeyword||3} min="0" />
+                  </div>
+                  <div>
+                    <label>View-Bonus (Faktor)</label>
+                    <input className="input" type="number" name="weightView" defaultValue={recSettings.weightView||1} min="0" />
+                  </div>
+                  <div>
+                    <label>Max. Anzahl Bücher</label>
+                    <input className="input" type="number" name="maxItems" defaultValue={recSettings.maxItems||12} min="1" max="50" />
+                  </div>
+                  <div style={{gridColumn:'1 / -1'}}><hr/></div>
+                  <div style={{gridColumn:'1 / -1'}}><strong>Schlüsselwörter (Komma-getrennt)</strong></div>
+                  <div>
+                    <label>Winter</label>
+                    <textarea className="input" rows="2" name="kw_winter" defaultValue={(recSettings.keywords?.winter||[]).join(', ')} />
+                  </div>
+                  <div>
+                    <label>Frühling</label>
+                    <textarea className="input" rows="2" name="kw_fruehling" defaultValue={(recSettings.keywords?.fruehling||[]).join(', ')} />
+                  </div>
+                  <div>
+                    <label>Sommer</label>
+                    <textarea className="input" rows="2" name="kw_sommer" defaultValue={(recSettings.keywords?.sommer||[]).join(', ')} />
+                  </div>
+                  <div>
+                    <label>Herbst</label>
+                    <textarea className="input" rows="2" name="kw_herbst" defaultValue={(recSettings.keywords?.herbst||[]).join(', ')} />
+                  </div>
+                  <div className="row sticky-actions" style={{gridColumn:'1 / -1', zIndex: 10}}>
+                    <button className="btn primary" type="submit">Speichern</button>
+                    <button className="btn" type="button" onClick={async()=>{ try{ setRecSettings(await api.getRecSettings?.()); toast.success('Zurückgesetzt auf gespeicherte Werte.'); }catch(e){ } }}>Zurücksetzen</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
 
       <CategoryManagerPanel
         catMeta={catMeta}
@@ -855,79 +935,6 @@ export default function App(){
       <footer className="container" style={{textAlign:'center',fontSize:12,color:'var(--muted)',padding:'24px 0'}}>
         © {new Date().getFullYear()} Kita-Bibliothek
       </footer>
-
-      {/* Kategorien-Manager */}
-
-      {/* Empfehlungen – Einstellungen */}
-      {showRecsSettings && (
-        <div className="card" style={{margin:12}}>
-          <div className="container">
-            <h3>Empfehlungen – Einstellungen</h3>
-            {!recSettings ? (
-              <div style={{color:'var(--muted)'}}>Lade Einstellungen…</div>
-            ) : (
-              <form className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}} onSubmit={async (e)=>{
-                e.preventDefault();
-                try{
-                  const payload = {
-                    enabled: e.target.enabled.checked,
-                    weightKeyword: parseInt(e.target.weightKeyword.value,10)||0,
-                    weightView: parseInt(e.target.weightView.value,10)||0,
-                    maxItems: parseInt(e.target.maxItems.value,10)||12,
-                    keywords: {
-                      winter: e.target.kw_winter.value.split(',').map(s=>s.trim()).filter(Boolean),
-                      fruehling: e.target.kw_fruehling.value.split(',').map(s=>s.trim()).filter(Boolean),
-                      sommer: e.target.kw_sommer.value.split(',').map(s=>s.trim()).filter(Boolean),
-                      herbst: e.target.kw_herbst.value.split(',').map(s=>s.trim()).filter(Boolean),
-                    }
-                  };
-                  const saved = await api.saveRecSettings?.(payload, token);
-                  setRecSettings(saved);
-                  toast.success('Einstellungen gespeichert.');
-                }catch(err){ toast.error(err.message || 'Speichern fehlgeschlagen'); }
-              }}>
-                <div className="row" style={{gridColumn:'1 / -1', alignItems:'center', gap:12}}>
-                  <label className="row"><input type="checkbox" name="enabled" defaultChecked={!!recSettings.enabled} /> Empfehlungen aktivieren</label>
-                </div>
-                <div>
-                  <label>Punkte pro Keyword</label>
-                  <input className="input" type="number" name="weightKeyword" defaultValue={recSettings.weightKeyword||3} min="0" />
-                </div>
-                <div>
-                  <label>View-Bonus (Faktor)</label>
-                  <input className="input" type="number" name="weightView" defaultValue={recSettings.weightView||1} min="0" />
-                </div>
-                <div>
-                  <label>Max. Anzahl Bücher</label>
-                  <input className="input" type="number" name="maxItems" defaultValue={recSettings.maxItems||12} min="1" max="50" />
-                </div>
-                <div style={{gridColumn:'1 / -1'}}><hr/></div>
-                <div style={{gridColumn:'1 / -1'}}><strong>Schlüsselwörter (Komma-getrennt)</strong></div>
-                <div>
-                  <label>Winter</label>
-                  <textarea className="input" rows="2" name="kw_winter" defaultValue={(recSettings.keywords?.winter||[]).join(', ')} />
-                </div>
-                <div>
-                  <label>Frühling</label>
-                  <textarea className="input" rows="2" name="kw_fruehling" defaultValue={(recSettings.keywords?.fruehling||[]).join(', ')} />
-                </div>
-                <div>
-                  <label>Sommer</label>
-                  <textarea className="input" rows="2" name="kw_sommer" defaultValue={(recSettings.keywords?.sommer||[]).join(', ')} />
-                </div>
-                <div>
-                  <label>Herbst</label>
-                  <textarea className="input" rows="2" name="kw_herbst" defaultValue={(recSettings.keywords?.herbst||[]).join(', ')} />
-                </div>
-                <div className="row sticky-actions" style={{gridColumn:'1 / -1'}}>
-                  <button className="btn primary" type="submit">Speichern</button>
-                  <button className="btn" type="button" onClick={async()=>{ try{ setRecSettings(await api.getRecSettings?.()); toast.success('Zurückgesetzt auf gespeicherte Werte.'); }catch(e){ } }}>Zurücksetzen</button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
