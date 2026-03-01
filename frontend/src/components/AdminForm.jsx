@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChipsInput } from '../chips.jsx';
 import { COLOR_PRESETS } from '../constants.js';
+import { api } from '../api.js';
 
 export function AdminForm({
   saveBook,
@@ -17,6 +18,23 @@ export function AdminForm({
   color3, setColor3,
   resetForm
 }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.uploadCover(file, token);
+      setCover(res.url);
+    } catch (err) {
+      alert('Fehler beim Upload: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <section className="card">
       <h2>{id ? 'Buch bearbeiten' : 'Buch anlegen'}</h2>
@@ -59,13 +77,23 @@ export function AdminForm({
         </div>
 
         <div>
-          <label>Cover-URL</label>
-          <input
-            className="input"
-            value={cover}
-            onChange={(e) => setCover(e.target.value)}
-            placeholder="https://…"
-          />
+          <label>Cover (URL oder Upload)</label>
+          <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+            <input
+              className="input"
+              value={cover}
+              onChange={(e) => setCover(e.target.value)}
+              placeholder="https://… oder /api/covers/…"
+            />
+            <input
+              type="file"
+              accept=".jpg,.png,.webp,.jpeg"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              style={{ fontSize: '13px' }}
+            />
+            {uploading && <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Lädt hoch…</span>}
+          </div>
         </div>
 
         <div style={{ gridColumn: '1 / -1' }}>

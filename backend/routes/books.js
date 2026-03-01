@@ -4,6 +4,41 @@ const fetch = require('node-fetch');
 const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { cryptoRandomId } = require('../utils');
+const fs = require('fs');
+const path = require('path');
+
+// Setup covers directory
+const dataDir = process.env.DB_FILE ? path.dirname(process.env.DB_FILE) : path.join(__dirname, '../../data');
+const coversDir = path.join(dataDir, 'covers');
+if (!fs.existsSync(coversDir)) {
+  fs.mkdirSync(coversDir, { recursive: true });
+}
+
+async function downloadCover(url) {
+  if (!url) return '';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return '';
+    const buffer = await res.buffer();
+
+    // Determine extension from content-type or default to jpg
+    let ext = '.jpg';
+    const contentType = res.headers.get('content-type');
+    if (contentType) {
+      if (contentType.includes('image/png')) ext = '.png';
+      else if (contentType.includes('image/webp')) ext = '.webp';
+      else if (contentType.includes('image/jpeg')) ext = '.jpg';
+    }
+
+    const filename = cryptoRandomId() + ext;
+    const filepath = path.join(coversDir, filename);
+    fs.writeFileSync(filepath, buffer);
+    return `/api/covers/${filename}`;
+  } catch (e) {
+    console.error('Error downloading cover:', e);
+    return url; // fallback to external url on error
+  }
+}
 
 router.get('/books', async (req, res) => {
   const rows = await db.all('SELECT * FROM books ORDER BY created_at DESC');
@@ -46,9 +81,10 @@ router.get('/isbn/:isbn', async (req, res) => {
         );
         authors = names.filter(Boolean);
       }
-      const cover = ol.covers && ol.covers.length
+      const extCover = ol.covers && ol.covers.length
         ? `https://covers.openlibrary.org/b/id/${ol.covers[0]}-L.jpg`
         : '';
+      const localCover = await downloadCover(extCover);
       const result = {
         title: ol.title || '',
         authors,
@@ -56,7 +92,7 @@ router.get('/isbn/:isbn', async (req, res) => {
         category: Array.isArray(ol.subjects) && ol.subjects.length ? ol.subjects[0] : '',
         categories: Array.isArray(ol.subjects) ? ol.subjects.slice(0, 3) : [],
         isbn: isbnRaw,
-        cover,
+        cover: localCover || extCover,
         source: 'Open Library',
       };
       return res.json(result);
@@ -69,6 +105,8 @@ router.get('/isbn/:isbn', async (req, res) => {
       const g = await gRes.json();
       const item = g.items?.[0]?.volumeInfo;
       if (item) {
+        const extCover = item.imageLinks?.thumbnail?.replace('http://', 'https://') || '';
+        const localCover = await downloadCover(extCover);
         return res.json({
           title: item.title || '',
           authors: item.authors || [],
@@ -76,7 +114,7 @@ router.get('/isbn/:isbn', async (req, res) => {
           category: item.categories?.[0] || '',
           categories: item.categories || [],
           isbn: isbnRaw,
-          cover: item.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
+          cover: localCover || extCover,
           source: 'Google Books',
         });
       }
