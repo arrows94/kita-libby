@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChipsInput } from './chips.jsx';
 import { api } from './api.js';
+import toast from 'react-hot-toast';
 
 export default function ManageBulk({ books, token, refresh }) {
   const [query, setQuery] = React.useState('');
@@ -53,7 +54,7 @@ export default function ManageBulk({ books, token, refresh }) {
 
   // Anwenden
   async function apply(){
-    if(!affected.length){ alert('Keine Bücher ausgewählt.'); return; }
+    if(!affected.length){ toast.error('Keine Bücher ausgewählt.'); return; }
     const ids = affected.map(b => b.id);
     try {
       if (mode === 'set') {
@@ -62,17 +63,17 @@ export default function ManageBulk({ books, token, refresh }) {
         await api.bulkCategories(ids, { add: targetTags }, token);
       } else if (mode === 'remove') {
         const toRemove = (sourceTags.length ? sourceTags : targetTags);
-        if(!toRemove.length){ alert('Bitte Quelle(n) oder Ziel(e) zum Entfernen wählen.'); return; }
+        if(!toRemove.length){ toast.error('Bitte Quelle(n) oder Ziel(e) zum Entfernen wählen.'); return; }
         await api.bulkCategories(ids, { remove: toRemove }, token);
       } else { // replace / merge
-        if(!sourceTags.length || !targetTags.length){ alert('Für „Ersetzen/ Zusammenführen“ bitte Quelle(n) und Ziel(e) setzen.'); return; }
+        if(!sourceTags.length || !targetTags.length){ toast.error('Für „Ersetzen/ Zusammenführen“ bitte Quelle(n) und Ziel(e) setzen.'); return; }
         await api.bulkCategories(ids, { remove: sourceTags, add: targetTags }, token);
       }
       await refresh();
-      alert(`Fertig: ${ids.length} Bücher aktualisiert.`);
+      toast.success(`Fertig: ${ids.length} Bücher aktualisiert.`);
     } catch (e) {
       console.error(e);
-      alert('Umsortieren fehlgeschlagen.');
+      toast.error('Umsortieren fehlgeschlagen.');
     }
   }
 

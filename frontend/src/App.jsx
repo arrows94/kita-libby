@@ -9,6 +9,9 @@ import { FilterPanel } from './components/FilterPanel.jsx';
 import { BookDetailModal } from './components/BookDetailModal.jsx';
 import { AdminForm } from './components/AdminForm.jsx';
 import { BookList } from './components/BookList.jsx';
+import toast from 'react-hot-toast';
+import { confirmToast } from './confirmToast.jsx';
+
 function CategoryManagerPanel({ catMeta, setCatMeta, refreshBooks, token }) {
   const [newCat, setNewCat] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -30,38 +33,40 @@ function CategoryManagerPanel({ catMeta, setCatMeta, refreshBooks, token }) {
       setNewCat('');
       await reloadMeta();
     } catch(e) {
-      alert(e?.message || 'Konnte Kategorie nicht anlegen.');
+      toast.error(e?.message || 'Konnte Kategorie nicht anlegen.');
     } finally { setBusy(false); }
   }
 
   async function deleteCategory(name) {
-    if (!confirm(`Kategorie "${name}" wirklich löschen?`)) return;
+    const ok = await confirmToast(`Kategorie "${name}" wirklich löschen?`);
+    if (!ok) return;
     setBusy(true);
     try {
       if (api.deleteCategory) {
         await api.deleteCategory(name, token);
       } else if (api.renameCategory) {
-        alert('Kein deleteCategory-Endpoint vorhanden. Bitte per Umbenennen/Merge auf eine Zielkategorie verschieben.');
+        toast.error('Kein deleteCategory-Endpoint vorhanden. Bitte per Umbenennen/Merge auf eine Zielkategorie verschieben.');
       }
       await reloadMeta();
       await refreshBooks?.();
     } catch(e) {
-      alert(e?.message || 'Löschen fehlgeschlagen.');
+      toast.error(e?.message || 'Löschen fehlgeschlagen.');
     } finally { setBusy(false); }
   }
 
   async function renameOrMerge(from, to) {
     const target = (to || '').trim();
     if (!target || from === target) return;
-    if (!confirm(`"${from}" zu "${target}" umbenennen?
-(Hinweis: existiert "${target}" bereits, werden Einträge dorthin verschoben = Merge)`)) return;
+    const ok = await confirmToast(`"${from}" zu "${target}" umbenennen?
+(Hinweis: existiert "${target}" bereits, werden Einträge dorthin verschoben = Merge)`);
+    if (!ok) return;
     setBusy(true);
     try {
       await api.renameCategory?.(from, target, token);
       await reloadMeta();
       await refreshBooks?.();
     } catch(e) {
-      alert(e?.message || 'Umbenennen/Merge fehlgeschlagen.');
+      toast.error(e?.message || 'Umbenennen/Merge fehlgeschlagen.');
     } finally { setBusy(false); }
   }
 
@@ -71,7 +76,7 @@ function CategoryManagerPanel({ catMeta, setCatMeta, refreshBooks, token }) {
       await api.setCatColor?.(name, color);
       await reloadMeta();
     } catch(e) {
-      alert(e?.message || 'Farbe konnte nicht gespeichert werden.');
+      toast.error(e?.message || 'Farbe konnte nicht gespeichert werden.');
     } finally { setBusy(false); }
   }
 
@@ -323,7 +328,7 @@ export default function App(){
       color2: color2 || '',
       color3: color3 || '',
     };
-    if(!payload.title){ alert('Titel darf nicht leer sein.'); return; }
+    if(!payload.title){ toast.error('Titel darf nicht leer sein.'); return; }
     try {
       if(id){ await api.updateBook(id, payload, token); }
       else { await api.createBook(payload, token); }
@@ -331,19 +336,20 @@ export default function App(){
       resetForm();
       navigate('/');
     } catch(e){
-      alert(e.message || 'Fehler beim Speichern');
+      toast.error(e.message || 'Fehler beim Speichern');
     }
   }
   async function delBook(id){
-    if(!confirm('Buch wirklich löschen?')) return;
+    const ok = await confirmToast('Buch wirklich löschen?');
+    if (!ok) return;
     try{
       await api.deleteBook(id, token);
       await refreshBooks();
       setTop(await api.getTop());
-    }catch(e){ alert(e.message || 'Fehler beim Löschen'); }
+    }catch(e){ toast.error(e.message || 'Fehler beim Löschen'); }
   }
   async function lookupISBN(){
-    if(!isbn.trim()){ alert('Bitte ISBN eingeben.'); return; }
+    if(!isbn.trim()){ toast.error('Bitte ISBN eingeben.'); return; }
     setLoadingIsbn(true);
     try{
       const info = await api.lookupISBN(isbn.trim());
@@ -352,7 +358,7 @@ export default function App(){
       if((categories||[]).length===0 && (info.categories||[]).length) setCategories(info.categories.slice(0,3));
       if(!description) setDescription(info.description||'');
       if(!cover) setCover(info.cover||'');
-    }catch{ alert('Keine Daten gefunden.'); }
+    }catch{ toast.error('Keine Daten gefunden.'); }
     finally { setLoadingIsbn(false); }
   }
   async function countView(id){
@@ -372,13 +378,13 @@ export default function App(){
     setBulkColor1(''); setBulkColor2(''); setBulkColor3('');
   }
   async function applyBulkColors(){
-    if(selectedIds.size===0){ alert('Keine Bücher ausgewählt.'); return; }
+    if(selectedIds.size===0){ toast.error('Keine Bücher ausgewählt.'); return; }
     const payload = {};
     if (bulkColor1 === '__CLEAR__') payload.color1 = null; else if (bulkColor1) payload.color1 = bulkColor1;
     if (bulkColor2 === '__CLEAR__') payload.color2 = null; else if (bulkColor2) payload.color2 = bulkColor2;
     if (bulkColor3 === '__CLEAR__') payload.color3 = null; else if (bulkColor3) payload.color3 = bulkColor3;
     if (Object.keys(payload).length===0){
-      alert('Bitte mindestens Farb-Tag 1–3 setzen oder löschen.');
+      toast.error('Bitte mindestens Farb-Tag 1–3 setzen oder löschen.');
       return;
     }
     const ids = Array.from(selectedIds);
@@ -386,9 +392,9 @@ export default function App(){
       await api.bulkUpdateColors(ids, payload, token);
       await refreshBooks();
       clearSelection();
-      alert('Farb-Tags aktualisiert.');
+      toast.success('Farb-Tags aktualisiert.');
     }catch(e){
-      alert(e.message || 'Sammel-Update fehlgeschlagen');
+      toast.error(e.message || 'Sammel-Update fehlgeschlagen');
     }
   }
 
@@ -400,7 +406,7 @@ export default function App(){
     try{
       const j = await api.lookupByTitle(book.title);
       setLookupResults(j.items || []);
-    } catch{ alert('Suche fehlgeschlagen'); }
+    } catch{ toast.error('Suche fehlgeschlagen'); }
     finally { setLookupBusy(false); }
   }
   async function applyPick(p){
@@ -412,7 +418,7 @@ export default function App(){
       await refreshBooks();
       setTop && setTop(await api.getTop ? await api.getTop() : []);
       setLookupOpen(false);
-    } catch{ alert('Übernehmen fehlgeschlagen'); }
+    } catch{ toast.error('Übernehmen fehlgeschlagen'); }
   }
 
   return (
@@ -427,7 +433,7 @@ export default function App(){
             <button className="btn" onClick={toggleKiosk}>{kiosk ? "Kiosk aus" : "Kiosk an"}</button>
             <button className="btn" onClick={()=>setShowCatMgr(s=>!s)}>{showCatMgr ? "Kategorien schließen" : "Kategorien-Manager"}</button>
 			<button className="btn" onClick={toggleTheme}>  {theme === 'dark' ? 'Hell' : 'Dunkel'}</button>
-            <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ alert("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "Empfehlungen schließen" : "Einstellungen Empfehlungen"}</button>
+            <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ toast.error("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "Empfehlungen schließen" : "Einstellungen Empfehlungen"}</button>
             <Login token={token} onToken={(t)=>{ setToken(t); localStorage.setItem('token', t||''); }} defaultRole="admin" />
           </div>
         </div>
@@ -751,7 +757,7 @@ export default function App(){
                         const a = document.createElement('a');
                         a.href = url; a.download = 'kita_books.csv'; a.click();
                         URL.revokeObjectURL(url);
-                      }catch(e){ alert('Export fehlgeschlagen'); }
+                      }catch(e){ toast.error('Export fehlgeschlagen'); }
                     }}>CSV Export</button>
 
                     {token && (localStorage.getItem('role')==='admin') && (
@@ -762,10 +768,10 @@ export default function App(){
                           const text = await file.text();
                           try{
                             const res = await api.importCSV(text, token);
-                            alert(`Importiert: ${res.imported}`);
+                            toast.success(`Importiert: ${res.imported}`);
                             await refreshBooks();
                             setTop(await api.getTop());
-                          }catch(err){ alert('Import fehlgeschlagen: ' + (err.message||'')); }
+                          }catch(err){ toast.error('Import fehlgeschlagen: ' + (err.message||'')); }
                         }} />
                         <button className="btn" onClick={()=>document.getElementById('csvFile').click()}>CSV Import</button>
                       </>
@@ -779,17 +785,18 @@ export default function App(){
                       <button className="btn" onClick={async()=>{
                         try{
                           const res = await api.enrichMissing(true, token);
-                          alert(`Dry-Run: ${res.count} Bücher mit Kandidaten gefunden.`);
-                        }catch(e){ alert('Enrichment fehlgeschlagen'); }
+                          toast.success(`Dry-Run: ${res.count} Bücher mit Kandidaten gefunden.`);
+                        }catch(e){ toast.error('Enrichment fehlgeschlagen'); }
                       }}>Dry-Run prüfen</button>
                       <button className="btn" onClick={async()=>{
-                        if(!confirm('Automatisch passende Metadaten übernehmen?')) return;
+                        const ok = await confirmToast('Automatisch passende Metadaten übernehmen?');
+                        if (!ok) return;
                         try{
                           const res = await api.enrichMissing(false, token);
-                          alert(`Übernommen: ${res.count}`);
+                          toast.success(`Übernommen: ${res.count}`);
                           await refreshBooks();
                           setTop(await api.getTop());
-                        }catch(e){ alert('Enrichment fehlgeschlagen'); }
+                        }catch(e){ toast.error('Enrichment fehlgeschlagen'); }
                       }}>Automatisch übernehmen</button>
                     </div>
                     <p style={{fontSize:12,color:'var(--muted)'}}>Hinweis: Exakter Titel bevorzugt, sonst erster Treffer.</p>
@@ -876,8 +883,8 @@ export default function App(){
                   };
                   const saved = await api.saveRecSettings?.(payload, token);
                   setRecSettings(saved);
-                  alert('Einstellungen gespeichert.');
-                }catch(err){ alert(err.message || 'Speichern fehlgeschlagen'); }
+                  toast.success('Einstellungen gespeichert.');
+                }catch(err){ toast.error(err.message || 'Speichern fehlgeschlagen'); }
               }}>
                 <div className="row" style={{gridColumn:'1 / -1', alignItems:'center', gap:12}}>
                   <label className="row"><input type="checkbox" name="enabled" defaultChecked={!!recSettings.enabled} /> Empfehlungen aktivieren</label>
@@ -914,7 +921,7 @@ export default function App(){
                 </div>
                 <div className="row sticky-actions" style={{gridColumn:'1 / -1'}}>
                   <button className="btn primary" type="submit">Speichern</button>
-                  <button className="btn" type="button" onClick={async()=>{ try{ setRecSettings(await api.getRecSettings?.()); alert('Zurückgesetzt auf gespeicherte Werte.'); }catch(e){ } }}>Zurücksetzen</button>
+                  <button className="btn" type="button" onClick={async()=>{ try{ setRecSettings(await api.getRecSettings?.()); toast.success('Zurückgesetzt auf gespeicherte Werte.'); }catch(e){ } }}>Zurücksetzen</button>
                 </div>
               </form>
             )}

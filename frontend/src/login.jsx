@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { api } from './api.js'
+import toast from 'react-hot-toast'
 export default function Login({ token, onToken, defaultRole='admin' }){
   const [pw, setPw] = useState('');
   const [role, setRole] = useState(localStorage.getItem('role') || defaultRole);
@@ -9,15 +10,15 @@ export default function Login({ token, onToken, defaultRole='admin' }){
       onToken(res.token);
       localStorage.setItem('role', role);
       setPw('');
-      alert('Login erfolgreich (' + role + ').');
+      toast.success('Login erfolgreich (' + role + ').');
     }catch(e){
-      alert((e.message) || 'Login fehlgeschlagen.');
+      toast.error((e.message) || 'Login fehlgeschlagen.');
     }
   }
   function logout(){
     onToken('');
     localStorage.removeItem('role');
-    alert('Abgemeldet.');
+    toast.success('Abgemeldet.');
   }
   return (
     <div className="row">
