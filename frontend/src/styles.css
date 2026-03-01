@@ -68,6 +68,11 @@ header{
   position: relative;
   z-index: 0
 }
+.book-grid > .card {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
 
 .input, select, textarea{
   width:100%;
@@ -144,9 +149,9 @@ header{
 .hidden{ display:none }
 
 /* ===== Grids ===== */
-.book-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px }
+.book-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px }
 @media (max-width: 768px){
-  .book-grid{ grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); }
+  .book-grid{ grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap:12px }
 }
 
 .sticky-actions{
@@ -309,6 +314,11 @@ img.cover::after {
   transform: translateX(2px);
 }
 .book-grid > .card {
-  transition: transform .18s ease, opacity .18s ease;
-  will-change: transform, opacity;
+  transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+  will-change: transform, opacity, box-shadow;
+}
+
+.book-grid > .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,.08);
 }

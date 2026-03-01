@@ -167,7 +167,6 @@ export default function App(){
   // Empfehlungen & Kategorien-Manager
   const [seasonal, setSeasonal] = useState({ season: '', items: [] });
   const [catMeta, setCatMeta] = useState([]);
-  const [showCatMgr, setShowCatMgr] = useState(false);
   const [showRecsSettings, setShowRecsSettings] = useState(false);
   const [recSettings, setRecSettings] = useState(null);
 
@@ -369,12 +368,15 @@ export default function App(){
           <h1>Kita-Bibliothek</h1>
           <div className="row wrap">
             <button className={"btn " + (tab==='search'?'primary':'')} onClick={()=>setTab('search')}>Suche</button>
-            <button className={"btn " + (tab==='manage'?'primary':'')} onClick={()=>setTab('manage')}>Verwalten</button>
-            <button className={"btn " + (tab==='admin'?'primary':'')} onClick={()=>setTab('admin')}>Administration</button>
-            <button className="btn" onClick={()=>setKiosk(k=>!k)}>{kiosk ? "Kiosk aus" : "Kiosk an"}</button>
-            <button className="btn" onClick={()=>setShowCatMgr(s=>!s)}>{showCatMgr ? "Kategorien schließen" : "Kategorien-Manager"}</button>
-			<button className="btn" onClick={toggleTheme}>  {theme === 'dark' ? 'Hell' : 'Dunkel'}</button>
-            <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ alert("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "Empfehlungen schließen" : "Einstellungen Empfehlungen"}</button>
+            {token && <button className={"btn " + (tab==='manage'?'primary':'')} onClick={()=>setTab('manage')}>Verwalten</button>}
+            {token && <button className={"btn " + (tab==='admin'?'primary':'')} onClick={()=>setTab('admin')}>Administration</button>}
+            <button className="btn" onClick={()=>setKiosk(k=>!k)} title="Kiosk Modus umschalten">
+              {kiosk ? "Kiosk aus" : "Kiosk an"}
+            </button>
+			      <button className="btn" onClick={toggleTheme} title="Theme umschalten">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            {token && <button className="btn" onClick={async()=>{ setShowRecsSettings(s=>!s); if(!recSettings){ try{ setRecSettings(await api.getRecSettings()); }catch(e){ alert("Konnte Einstellungen nicht laden"); } } }}>{showRecsSettings ? "⚙️ Schließen" : "⚙️"}</button>}
             <Login token={token} onToken={(t)=>{ setToken(t); localStorage.setItem('token', t||''); }} defaultRole="admin" />
           </div>
         </div>
@@ -431,89 +433,95 @@ export default function App(){
               </div>
 
               {showFilters && (
-                <div className="filter-panel">
-                  <div className="filter-grid">
-                    {/* Kategorien */}
-                    <section>
-                      <div className="filter-head">
-                        <strong>Kategorien</strong>
-                        <div className="filter-actions">
-                          {catFilter.length > 0 && (
-                            <button className="btn" onClick={()=>setCatFilter([])}>Zurücksetzen</button>
-                          )}
+                <div className="modal" role="dialog" aria-modal="true" aria-labelledby="filter-title" onClick={()=>setShowFilters(false)}>
+                  <div className="modal-content filter-panel" onClick={(e)=>e.stopPropagation()}>
+                    <div className="row" style={{justifyContent:'space-between', marginBottom:16}}>
+                      <h3 id="filter-title" style={{margin:0}}>Filter</h3>
+                      <button className="btn" onClick={()=>setShowFilters(false)}>Schließen</button>
+                    </div>
+                    <div className="filter-grid">
+                      {/* Kategorien */}
+                      <section>
+                        <div className="filter-head">
+                          <strong>Kategorien</strong>
+                          <div className="filter-actions">
+                            {catFilter.length > 0 && (
+                              <button className="btn" onClick={()=>setCatFilter([])}>Zurücksetzen</button>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {catFilter.length > 0 && (
-                        <div className="filter-active">
-                          {catFilter.map((c)=>(
-                            <span key={c} className="chip">
-                              {c}
-                              <button onClick={()=>setCatFilter(catFilter.filter(x=>x!==c))}>×</button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="filter-cats" role="listbox" aria-label="Kategorien wählen">
-                        {allCategories.map((c)=>(
-                          !catFilter.includes(c) && (
-                            <span
-                              key={c}
-                              className="badge"
-                              role="option"
-                              onClick={()=>setCatFilter([...catFilter, c])}
-                            >
-                              {c}
-                            </span>
-                          )
-                        ))}
-                        {allCategories.length===0 && (
-                          <div style={{color:'var(--muted)', fontSize:13}}>Noch keine Kategorien im Bestand.</div>
+                        {catFilter.length > 0 && (
+                          <div className="filter-active">
+                            {catFilter.map((c)=>(
+                              <span key={c} className="chip">
+                                {c}
+                                <button onClick={()=>setCatFilter(catFilter.filter(x=>x!==c))}>×</button>
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                    </section>
 
-                    {/* Farben */}
-                    <section>
-                      <div className="filter-head">
-                        <strong>Farben</strong>
-                        <div className="filter-actions">
-                          {filterColors.length>0 && (
-                            <button className="btn" onClick={()=>setFilterColors([])}>Zurücksetzen</button>
+                        <div className="filter-cats" role="listbox" aria-label="Kategorien wählen">
+                          {allCategories.map((c)=>(
+                            !catFilter.includes(c) && (
+                              <span
+                                key={c}
+                                className="badge"
+                                role="option"
+                                onClick={()=>setCatFilter([...catFilter, c])}
+                              >
+                                {c}
+                              </span>
+                            )
+                          ))}
+                          {allCategories.length===0 && (
+                            <div style={{color:'var(--muted)', fontSize:13}}>Noch keine Kategorien im Bestand.</div>
                           )}
                         </div>
-                      </div>
-                      <div className="filter-colors" role="group" aria-label="Farben filtern">
-                        {COLOR_PRESETS.map((c)=>{
-                          const active = filterColors.includes(c.key);
-                          return (
-                            <button
-                              key={c.key}
-                              className="badge"
-                              onClick={() =>
-                                setFilterColors(p => active ? p.filter(x=>x!==c.key) : [...p, c.key])
-                              }
-                              title={c.name}
-                              style={{
-                                background: active ? c.hex || '#fff' : '#fff',
-                                color: active ? (c.key === 'white' ? '#111' : '#fff') : 'inherit',
-                                borderColor: c.border || 'transparent',
-                              }}
-                            >
-                              <span
-                                className="tag-dot"
+                      </section>
+
+                      {/* Farben */}
+                      <section>
+                        <div className="filter-head">
+                          <strong>Farben</strong>
+                          <div className="filter-actions">
+                            {filterColors.length>0 && (
+                              <button className="btn" onClick={()=>setFilterColors([])}>Zurücksetzen</button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="filter-colors" role="group" aria-label="Farben filtern">
+                          {COLOR_PRESETS.map((c)=>{
+                            const active = filterColors.includes(c.key);
+                            return (
+                              <button
+                                key={c.key}
+                                className="badge"
+                                onClick={() =>
+                                  setFilterColors(p => active ? p.filter(x=>x!==c.key) : [...p, c.key])
+                                }
+                                title={c.name}
                                 style={{
-                                  background: c.hex || '#fff',
-                                  border: c.key === 'white' ? '1px solid #d1d5db' : 'none',
+                                  background: active ? c.hex || '#fff' : '#fff',
+                                  color: active ? (c.key === 'white' ? '#111' : '#fff') : 'inherit',
+                                  borderColor: c.border || 'transparent',
                                 }}
-                              />
-                              {c.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </section>
+                              >
+                                <span
+                                  className="tag-dot"
+                                  style={{
+                                    background: c.hex || '#fff',
+                                    border: c.key === 'white' ? '1px solid #d1d5db' : 'none',
+                                  }}
+                                />
+                                {c.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    </div>
                   </div>
                 </div>
               )}
@@ -524,14 +532,29 @@ export default function App(){
           <div className="container">
             <div className="book-grid" style={{ marginTop: 12, gridTemplateColumns: kiosk ? 'repeat(auto-fill,minmax(220px,1fr))' : undefined }}>
               {filtered.map((b) => (
-                <article key={b.id} className="card" onClick={() => { countView(b.id); openBook(b); }}>
+                <article
+                  key={b.id}
+                  className="card"
+                  onClick={() => {
+                    if (selectMode) {
+                      toggleSelect(b.id);
+                    } else {
+                      countView(b.id);
+                      openBook(b);
+                    }
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    ...(selectMode && selectedIds.has(b.id) ? { borderColor: 'var(--accent)', borderWidth: 2, background: 'var(--badge-bg)' } : {})
+                  }}
+                >
                   <div className="row">
                     {selectMode && (
                       <input
                         type="checkbox"
                         checked={selectedIds.has(b.id)}
                         onChange={(e)=>{ e.stopPropagation(); toggleSelect(b.id); }}
-                        style={{marginRight:6}}
+                        style={{marginRight:6, width:'auto'}}
                         aria-label={`Buch auswählen: ${b.title}`}
                       />
                     )}
