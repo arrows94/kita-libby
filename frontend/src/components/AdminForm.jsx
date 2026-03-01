@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChipsInput } from '../chips.jsx';
 import { COLOR_PRESETS } from '../constants.js';
 import { api } from '../api.js';
+import toast from 'react-hot-toast';
 
 export function AdminForm({
   saveBook,
@@ -29,7 +30,7 @@ export function AdminForm({
       const res = await api.uploadCover(file, token);
       setCover(res.url);
     } catch (err) {
-      alert('Fehler beim Upload: ' + err.message);
+      toast.error('Fehler beim Upload: ' + err.message);
     } finally {
       setUploading(false);
     }
