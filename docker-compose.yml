@@ -1,0 +1,34 @@
+services:
+  frontend-build:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh","-lc","npm ci && npm run build"]
+    volumes:
+      - ./frontend:/app
+  backend:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh","-lc","npm install --omit=dev && node server.js"]
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_FILE: /data/data.sqlite
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      EDITOR_PASSWORD: ${EDITOR_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    expose:
+      - "3001"   # nur intern erreichbar
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "8080:80"                         # Aufruf über http://HOST:8080/
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/usr/share/caddy:ro   # <- hier liegt index.html
+    depends_on:
+      - backend

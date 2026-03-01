@@ -1,0 +1,15 @@
+:80 {
+  encode gzip zstd
+
+  route {
+    # 1) ZUERST API matchen, Prefix /api entfernen, dann proxyn
+    handle_path /api/* {
+      reverse_proxy backend:3001
+    }
+
+    # 2) Danach SPA: statische Dateien und Fallback auf index.html
+    root * /usr/share/caddy
+    try_files {path} /index.html
+    file_server
+  }
+}
