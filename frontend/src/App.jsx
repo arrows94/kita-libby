@@ -937,6 +937,7 @@ export default function App(){
         <div className="card" style={{margin:12}}>
           <div className="container">
             <h3>Empfehlungen – Einstellungen</h3>
+            {!recSettings ? (
               <div style={{color:'var(--muted)'}}>Lade Einstellungen…</div>
             ) : (
               <form className="grid" style={{gridTemplateColumns:'1fr 1fr', gap:12}} onSubmit={async (e)=>{
