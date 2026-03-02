@@ -1,49 +1,9 @@
 
-> kita-library-frontend@1.4.0 dev
+> kita-library-frontend@1.4.0 dev /app/frontend
 > vite
 
 
-  VITE v5.4.19  ready in 326 ms
+  VITE v5.4.21  ready in 268 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
-8:42:07 PM [vite] http proxy error: /books?limit=50&offset=0
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:42:07 PM [vite] http proxy error: /stats/top?limit=10
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:42:07 PM [vite] http proxy error: /recommendations/seasonal
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:42:07 PM [vite] http proxy error: /categories/meta
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:45:04 PM [vite] page reload src/App.jsx
-8:45:29 PM [vite] page reload src/App.jsx
-8:45:44 PM [vite] page reload src/App.jsx
-8:46:00 PM [vite] http proxy error: /books?limit=50&offset=0
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:46:00 PM [vite] http proxy error: /stats/top?limit=10
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:46:00 PM [vite] http proxy error: /recommendations/seasonal
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:46:00 PM [vite] http proxy error: /categories/meta
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:46:02 PM [vite] http proxy error: /login
-AggregateError [ECONNREFUSED]:
-    at internalConnectMultiple (node:net:1134:18)
-    at afterConnectMultiple (node:net:1715:7)
-8:47:36 PM [vite] page reload src/App.jsx
