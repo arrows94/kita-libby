@@ -1,0 +1,25 @@
+
+> kita-library-frontend@1.4.0 dev /app/frontend
+> vite
+
+
+  VITE v5.4.21  ready in 431 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+5:52:24 AM [vite] http proxy error: /books?limit=50&offset=0
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+5:52:24 AM [vite] http proxy error: /stats/top?limit=10
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+5:52:24 AM [vite] http proxy error: /recommendations/seasonal
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+5:52:24 AM [vite] http proxy error: /categories/meta
+AggregateError [ECONNREFUSED]:
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)

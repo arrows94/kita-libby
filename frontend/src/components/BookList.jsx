@@ -28,9 +28,18 @@ export function BookList({
           <article
             key={b.id}
             className="card"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               countView(b.id);
               openBook(b);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                countView(b.id);
+                openBook(b);
+              }
             }}
           >
             <div className="row">

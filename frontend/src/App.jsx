@@ -449,7 +449,20 @@ export default function App(){
               </div>
               <div className="book-grid" style={{ marginTop: 12 }}>
                 {seasonal.items.map((b) => (
-                  <article key={b.id} className="card" onClick={()=>{ countView(b.id); openBook(b); }}>
+                  <article
+                    key={b.id}
+                    className="card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={()=>{ countView(b.id); openBook(b); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        countView(b.id);
+                        openBook(b);
+                      }
+                    }}
+                  >
                     <div className="row">
                       {b.cover ? (
                         <img loading="lazy" src={b.cover} alt="Cover" style={{ width: 80, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
@@ -535,7 +548,7 @@ export default function App(){
                 ) : (
                   <div className="book-grid" style={{marginTop:12}}>
                     {lookupResults.map((r, i) => (
-                      <article key={i} className="card">
+                      <article key={i} className="card" role="article">
                         <div className="row">
                           {r.cover ? <img src={r.cover} alt="Cover" style={{width:80,height:110,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}}/> : <div style={{width:80,height:110,background:'#f1f5f9',border:'1px solid #e5e7eb',borderRadius:8}}/>}
                           <div style={{flex:1,minWidth:0}}>
@@ -603,7 +616,7 @@ export default function App(){
                   ) : (
                     <div className="book-grid" style={{marginTop:12}}>
                       {lookupResults.map((r, i) => (
-                        <article key={i} className="card">
+                        <article key={i} className="card" role="article">
                           <div className="row">
                             {r.cover ? <img src={r.cover} alt="Cover" style={{width:80,height:110,objectFit:'cover',borderRadius:8,border:'1px solid #e5e7eb'}}/> : <div style={{width:80,height:110,background:'#f1f5f9',border:'1px solid #e5e7eb',borderRadius:8}}/>}
                             <div style={{flex:1,minWidth:0}}>
