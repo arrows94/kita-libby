@@ -17,6 +17,11 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET is not defined in production environment.");
+  process.exit(1);
+}
+
 // --- Covers Dir Init ---
 const dataDir = process.env.DB_FILE ? path.dirname(process.env.DB_FILE) : path.join(__dirname, '../data');
 const coversDir = path.join(dataDir, 'covers');

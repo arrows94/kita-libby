@@ -28,10 +28,11 @@ The backend relies on the following environment variables. In a Docker setup, th
 
 - `PORT` (default: `3001`) - The port the backend server listens on.
 - `DB_FILE` (default: `./data.sqlite`) - The path to the SQLite database file.
-- `ADMIN_PASSWORD` (default: `change-me`) - Password for the admin role (full access).
+- `ADMIN_PASSWORD` (**Required**) - Password for the admin role (full access). If not set, admin login will be disabled.
 - `EDITOR_PASSWORD` (optional) - Password for the editor role (limited access, e.g., cannot delete books or manage categories/settings).
-- `JWT_SECRET` (default: `dev-secret-change-me`) - Secret key for signing JSON Web Tokens.
+- `JWT_SECRET` (**Required in production**) - Secret key for signing JSON Web Tokens. If `NODE_ENV=production` is set, the server will refuse to start and crash if this is missing. In development, a fallback secret is used.
 - `GOOGLE_BOOKS_KEY` (optional) - API key for Google Books API to improve metadata lookups.
+- `NODE_ENV` (optional) - Set to `production` to enable production-level security checks (e.g., enforcing `JWT_SECRET`).
 
 ## Getting Started
 
