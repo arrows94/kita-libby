@@ -1,33 +1,39 @@
 from playwright.sync_api import sync_playwright
-import time
 
-def test_admin_upload(page):
-    # Log any console errors to help debugging
-    page.on("console", lambda msg: print(f"Browser console: {msg.text}"))
-    page.on("dialog", lambda dialog: dialog.accept())
+def test_frontend():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto('http://localhost:5173')
 
-    page.goto("http://localhost:5173")
-    time.sleep(1)
+        # Wait for the book grid and articles to be rendered
+        page.wait_for_selector('.book-grid article')
 
-    # Try different selectors for Admin tab
-    admin_btn = page.locator('button:has-text("Administration")')
-    if admin_btn.count() > 0:
-        admin_btn.first.click()
-        time.sleep(1)
+        # Verify 50 books are loaded initially
+        books = page.query_selector_all('.book-grid article')
+        print(f"Initial books count: {len(books)}")
+        page.screenshot(path="verification_initial.png")
 
-    # Fill password and login
-    print("Filling password...")
-    page.fill('input[type="password"]', 'change-me')
-    print("Clicking login...")
-    page.locator('button:has-text("Login")').click()
+        # Verify load more button exists and works
+        load_more_btn = page.locator('button:has-text("Mehr laden")')
+        if load_more_btn.is_visible():
+            load_more_btn.click()
+            page.wait_for_timeout(1000) # Wait for render
 
-    time.sleep(2)
+            books_after = page.query_selector_all('.book-grid article')
+            print(f"Books count after load more: {len(books_after)}")
 
-    print("Taking screenshot...")
-    page.screenshot(path="verification2.png", full_page=True)
+        page.screenshot(path="verification_after.png")
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
-    test_admin_upload(page)
-    browser.close()
+        # Try search
+        search_input = page.locator('input[aria-label="Suche"]')
+        search_input.fill("Test Book 1")
+        page.wait_for_timeout(1000) # Wait for render
+        books_search = page.query_selector_all('.book-grid article')
+        print(f"Books count after search: {len(books_search)}")
+        page.screenshot(path="verification_search.png")
+
+        browser.close()
+
+if __name__ == "__main__":
+    test_frontend()
