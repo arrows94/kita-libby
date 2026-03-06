@@ -60,7 +60,7 @@ export function BookList({
                   loading="lazy"
                   src={b.cover}
                   sizes="(max-width: 768px) 40vw, 120px"
-                  alt="Cover"
+                  alt={`Cover von ${b.title}`}
                   style={{
                     width: 80,
                     height: 110,

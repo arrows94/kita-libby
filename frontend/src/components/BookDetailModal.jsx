@@ -22,7 +22,7 @@ export function BookDetailModal({ selectedBook, closeBook, openLookup }) {
           {selectedBook.cover ? (
             <img
               src={selectedBook.cover}
-              alt="Cover"
+              alt={`Cover von ${selectedBook.title}`}
               style={{
                 width: 160,
                 height: 220,

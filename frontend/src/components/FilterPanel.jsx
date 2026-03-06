@@ -29,7 +29,7 @@ export function FilterPanel({
               {catFilter.map((c) => (
                 <span key={c} className="chip">
                   {c}
-                  <button onClick={() => setCatFilter(catFilter.filter((x) => x !== c))}>×</button>
+                  <button onClick={() => setCatFilter(catFilter.filter((x) => x !== c))} aria-label={`Filter ${c} entfernen`} title={`Filter ${c} entfernen`}>×</button>
                 </span>
               ))}
             </div>
@@ -76,6 +76,7 @@ export function FilterPanel({
                 <button
                   key={c.key}
                   className="badge"
+                  aria-pressed={active}
                   onClick={() =>
                     setFilterColors((p) =>
                       active ? p.filter((x) => x !== c.key) : [...p, c.key]
