@@ -29,7 +29,12 @@ export function FilterPanel({
               {catFilter.map((c) => (
                 <span key={c} className="chip">
                   {c}
-                  <button onClick={() => setCatFilter(catFilter.filter((x) => x !== c))}>×</button>
+                  <button
+                    aria-label={`Kategorie ${c} entfernen`}
+                    onClick={() => setCatFilter(catFilter.filter((x) => x !== c))}
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
@@ -39,14 +44,15 @@ export function FilterPanel({
             {allCategories.map(
               (c) =>
                 !catFilter.includes(c) && (
-                  <span
+                  <button
+                    type="button"
                     key={c}
                     className="badge"
                     role="option"
                     onClick={() => setCatFilter([...catFilter, c])}
                   >
                     {c}
-                  </span>
+                  </button>
                 )
             )}
             {allCategories.length === 0 && (
@@ -74,8 +80,10 @@ export function FilterPanel({
               const active = filterColors.includes(c.key);
               return (
                 <button
+                  type="button"
                   key={c.key}
                   className="badge"
+                  aria-pressed={active}
                   onClick={() =>
                     setFilterColors((p) =>
                       active ? p.filter((x) => x !== c.key) : [...p, c.key]

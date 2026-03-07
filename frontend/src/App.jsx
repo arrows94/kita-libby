@@ -161,41 +161,26 @@ export default function App(){
   }
 
   const [books, setBooks] = useState([]);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [displayLimit, setDisplayLimit] = useState(50);
   const LIMIT = 50;
 
-  async function loadMore() {
-    if (!hasMore) return;
+  async function loadInitialBooks() {
     try {
-      const offset = page * LIMIT;
-      const newBooks = await api.getBooks(LIMIT, offset);
-      if (newBooks.length < LIMIT) {
-        setHasMore(false);
-      }
-      setBooks(prev => {
-        // avoid duplicates
-        const existingIds = new Set(prev.map(b => b.id));
-        const filtered = newBooks.filter(b => !existingIds.has(b.id));
-        return [...prev, ...filtered];
-      });
-      setPage(p => p + 1);
+      const allBooks = await api.getBooks(); // Fetch all books
+      setBooks(allBooks);
     } catch (e) {
       console.error(e);
     }
   }
 
+  function loadMore() {
+    setDisplayLimit(prev => prev + LIMIT);
+  }
+
   async function refreshBooks() {
     try {
-      // Reload up to the current number of loaded books, or at least LIMIT
-      const currentLimit = Math.max(page * LIMIT, LIMIT);
-      const newBooks = await api.getBooks(currentLimit, 0);
-      setBooks(newBooks);
-      if (newBooks.length < currentLimit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+      const allBooks = await api.getBooks();
+      setBooks(allBooks);
     } catch (e) {
       console.error(e);
     }
@@ -273,7 +258,7 @@ export default function App(){
 
   // Initial data
   useEffect(() => {
-    loadMore();
+    loadInitialBooks();
     api.getTop().then(setTop).catch(()=>setTop([]));
     api.getSeasonal?.().then(setSeasonal).catch(()=>setSeasonal({season:'',items:[]}));
     api.getCatMeta?.().then(setCatMeta).catch(()=>setCatMeta([]));
@@ -304,6 +289,17 @@ export default function App(){
       return matchesQ && matchesCat && matchesColors;
     });
   }, [books, query, catFilter, filterColors]);
+
+  const displayedBooks = useMemo(() => {
+    return filtered.slice(0, displayLimit);
+  }, [filtered, displayLimit]);
+
+  const hasMore = displayLimit < filtered.length;
+
+  // Reset pagination on search change
+  useEffect(() => {
+    setDisplayLimit(LIMIT);
+  }, [query, catFilter, filterColors]);
 
   // Admin helpers
   function resetForm(){
@@ -514,7 +510,7 @@ export default function App(){
 
           {/* Trefferliste */}
           <BookList
-            filtered={filtered}
+            filtered={displayedBooks}
             kiosk={kiosk}
             countView={countView}
             openBook={openBook}
@@ -582,7 +578,7 @@ export default function App(){
 
             {/* Trefferliste */}
             <BookList
-              filtered={filtered}
+              filtered={displayedBooks}
               kiosk={true}
               countView={countView}
               openBook={openBook}
